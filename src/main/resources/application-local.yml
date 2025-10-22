@@ -1,0 +1,16 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+  application:
+    name: dms-search-service
+  cloud:
+    config:
+      enabled: false
+    vault:
+      enabled: false
+  data:
+    mongodb:
+      uri: mongodb://dms:dms@localhost:27017/dms?authSource=dms
+server:
+  port: 8081

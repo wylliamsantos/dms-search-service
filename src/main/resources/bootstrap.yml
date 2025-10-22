@@ -1,0 +1,36 @@
+spring:  
+  application:
+    name: dms-search-service
+  cloud:
+    config:
+      name: dms-search-config
+      uri: http://arquitetura-config-service-config.${DOMAIN_NAME:dms-preprd.in}
+      fail-fast: true
+    vault:
+      host: ${VAULT_HOST:vault.dms-preprd.in}
+      port: 443
+      fail-fast: true
+      scheme: https
+      generic:
+        default-context: arquitetura/application
+        application-name: arquitetura/dms-search-service
+      authentication: TOKEN
+      token: ${VAULT_TOKEN:c80b3b1d-71b9-1e38-bb61-89681c20156b}
+  cache:
+    ehcache:
+      config: classpath:ehcache.xml
+management: 
+  security:
+    enabled: false
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+  cloud:
+    config:
+      enabled: false
+      fail-fast: false
+    vault:
+      enabled: false
+      fail-fast: false

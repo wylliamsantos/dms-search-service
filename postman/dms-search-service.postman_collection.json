@@ -1,0 +1,125 @@
+{
+  "info": {
+    "_postman_id": "5bd1f3d4-9242-4dbb-b49f-5b0d4c5a1c2d",
+    "name": "DMS Search Service",
+    "description": "Coleção de exemplos para o dms-search-service rodando em {{search_base_url}}.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "search_base_url",
+      "value": "http://localhost:8081",
+      "type": "string"
+    },
+    {
+      "key": "transaction_id",
+      "value": "tx-local-001",
+      "type": "string"
+    },
+    {
+      "key": "authorization_header",
+      "value": "Basic YWRtaW46YWRtaW4=",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Search by Author",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "TransactionId", "value": "{{transaction_id}}" },
+          { "key": "Authorization", "value": "{{authorization_header}}" },
+          { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "author", "value": "agent.api", "type": "text" },
+            { "key": "skipCount", "value": "0", "type": "text" },
+            { "key": "maxItems", "value": "25", "type": "text" },
+            { "key": "searchScope", "value": "ALL", "type": "text" }
+          ]
+        },
+        "url": {
+          "raw": "{{search_base_url}}/v1/search/byAuthor",
+          "host": ["{{search_base_url}}"],
+          "path": ["v1", "search", "byAuthor"]
+        }
+      }
+    },
+    {
+      "name": "Search by Metadata",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "TransactionId", "value": "{{transaction_id}}" },
+          { "key": "Authorization", "value": "{{authorization_header}}" },
+          { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "type", "value": "contract", "type": "text" },
+            { "key": "metadata", "value": "{\"cpf\":\"12345678900\"}", "type": "text" },
+            { "key": "skipCount", "value": "0", "type": "text" },
+            { "key": "maxItems", "value": "25", "type": "text" },
+            { "key": "searchScope", "value": "ALL", "type": "text" },
+            { "key": "versionType", "value": "MAJOR", "type": "text" }
+          ]
+        },
+        "url": {
+          "raw": "{{search_base_url}}/v1/search/byMetadata",
+          "host": ["{{search_base_url}}"],
+          "path": ["v1", "search", "byMetadata"]
+        }
+      }
+    },
+    {
+      "name": "Search by Query",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "TransactionId", "value": "{{transaction_id}}" },
+          { "key": "Authorization", "value": "{{authorization_header}}" },
+          { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "query", "value": "select * from cmis:document", "type": "text" },
+            { "key": "skipCount", "value": "0", "type": "text" },
+            { "key": "maxItems", "value": "50", "type": "text" },
+            { "key": "versionType", "value": "MAJOR", "type": "text" }
+          ]
+        },
+        "url": {
+          "raw": "{{search_base_url}}/v1/search/byQuery",
+          "host": ["{{search_base_url}}"],
+          "path": ["v1", "search", "byQuery"]
+        }
+      }
+    },
+    {
+      "name": "Search by CPF",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "TransactionId", "value": "{{transaction_id}}" },
+          { "key": "Authorization", "value": "{{authorization_header}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cpf\": \"12345678900\",\n  \"searchScope\": \"ALL\",\n  \"versionType\": \"MAJOR\",\n  \"documentCategoryNames\": [\"personal-docs\", \"contracts\"]\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{search_base_url}}/v1/search/byCpf",
+          "host": ["{{search_base_url}}"],
+          "path": ["v1", "search", "byCpf"]
+        }
+      }
+    }
+  ]
+}
