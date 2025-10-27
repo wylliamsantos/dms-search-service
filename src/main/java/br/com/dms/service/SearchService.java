@@ -207,11 +207,11 @@ public class SearchService {
                 return new QueryResult(HttpStatus.OK, mapToPage(response.getBody(), versionType, transactionId));
             }
 
-            logger.warn("DMS - TransactionId: {} - Wasn't possible search - HTTP Status: {}", transactionId, response.getStatusCodeValue());
+            logger.warn("DMS - TransactionId: {} - Wasn't possible search - HTTP Status: {}", transactionId, response.getStatusCode().value());
             return new QueryResult(response.getStatusCode(), null);
         } catch (HttpClientErrorException clientErrorException) {
             logger.error("DMS - TransactionId: {} - Error to search - HTTP Status: {} - Body message: {}", transactionId,
-                    clientErrorException.getRawStatusCode(), clientErrorException.getResponseBodyAsString(), clientErrorException);
+                    clientErrorException.getStatusCode().value(), clientErrorException.getResponseBodyAsString(), clientErrorException);
             return new QueryResult(clientErrorException.getStatusCode(), null);
         } catch (Exception exception) {
             if (exception instanceof HttpServerErrorException httpServerErrorException && logger.isErrorEnabled()) {
@@ -233,8 +233,12 @@ public class SearchService {
             JsonNode entriesNode = rootNode.path("list").path("entries");
 
             List<EntryPagination> entries = new ArrayList<>();
-            for (JsonNode jsonNode : entriesNode.findValues("entry", new ArrayList<>())) {
-                EntryPagination entry = objectMapper.readValue(jsonNode.toString(), EntryPagination.class);
+            for (JsonNode wrapperNode : entriesNode) {
+                JsonNode entryNode = wrapperNode.path("entry");
+                if (entryNode.isMissingNode()) {
+                    continue;
+                }
+                EntryPagination entry = objectMapper.treeToValue(entryNode, EntryPagination.class);
                 if (filterVersion(versionType, entry)) {
                     entries.add(entry);
                 }

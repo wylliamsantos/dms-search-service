@@ -30,18 +30,8 @@ public class DocumentCategory {
 	@Field("unique_attributes")
 	private String uniqueAttributes;
 
-	@Field("search_duplicate_criteria")
-	private String searchDuplicateCriteria;
-
-	private String path;
-
 	@Field("validity_in_days")
 	private Long validityInDays;
-
-	private String site;
-
-	@Field("parent_folder")
-	private String parentFolder;
 
 	public String getId() {
 		return id;
@@ -107,43 +97,11 @@ public class DocumentCategory {
 		this.uniqueAttributes = uniqueAttributes;
 	}
 
-	public String getSearchDuplicateCriteria() {
-		return searchDuplicateCriteria;
-	}
-
-	public void setSearchDuplicateCriteria(String searchDuplicateCriteria) {
-		this.searchDuplicateCriteria = searchDuplicateCriteria;
-	}
-
-	public String getPath() {
-		return path;
-	}
-
-	public void setPath(String path) {
-		this.path = path;
-	}
-
 	public Long getValidityInDays() {
 		return validityInDays;
 	}
 
 	public void setValidityInDays(Long validityInDays) {
 		this.validityInDays = validityInDays;
-	}
-
-	public String getSite() {
-		return site;
-	}
-
-	public void setSite(String site) {
-		this.site = site;
-	}
-
-	public String getParentFolder() {
-		return parentFolder;
-	}
-
-	public void setParentFolder(String parentFolder) {
-		this.parentFolder = parentFolder;
 	}
 }
