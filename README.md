@@ -1,35 +1,53 @@
-## **dms-search-service**
+## dms-search-service
 
-Disponibiliza a API para realizar pesquisas no DMS.
- 
-- v1 e v2 adicionam os seguintes itens/features:
-	- cache da entity document_category: 5 minutos para document_category. A key do cache é document_category.name
-	- cache da entity document_type: 5 minutos para document_type. A key do cache é document_type.name e document_category.name.
+Serviço responsável por expor consultas aos documentos armazenados no DMS. Toda a leitura agora ocorre diretamente no MongoDB, reutilizando os mesmos modelos do `dms-document-service`.
 
-- v2 adiciona as seguintes features:
-    - controle expiração de documento: permite buscar documentos pelos seguintes escopos: VALID (documentos não expirados), EXPIRED (documentos expirados), ALL (todos documentos), LATEST (ultima versã do documento).
-    - controle de acesso: exige token JWS para consumir os resources da versão 2. Valida integridade, autenticidade e expiração.
-    
+### Build & Test
 
-## **swagger**
+```bash
+./gradlew compileJava
+./gradlew test
+./gradlew bootRun
+```
 
-O swagger da API pode ser acessado em <http://dms-search-service.k8s.dev.bancoagiplan.com.br/swagger-ui.html>
+Certifique-se de ter MongoDB disponível com a base `dms` (mesmo schema do document-service).
 
-## **RDS**
-mysql-dev-dms-document.agiplan.aws.local:3306/dms
+### API disponível
 
-- tables:
-	- document_category: armazena a categoria do documento. Ex: ac:identificacao, ac:comprovante
-	- document_type: armazena os tipos de documento associados a uma categoria especifica. Ex: CPF, RG, CNH, RENDA, RESIDENCIA
-	
-- cardinalidade:
-	**document_category 1 ------------ 0..* document_type**
+#### `POST /v1/search/byCpf`
 
-## **release notes**
+Payload esperado:
+```json
+{
+  "cpf": "12345678900",
+  "documentCategoryNames": ["ac:identificacao"],
+  "searchScope": "ALL",    
+  "versionType": "MAJOR"
+}
+```
 
-- 01/05/2019
-    - filtro por escopo do documento
-    - controle de acesso
-    - configurações em db ao invés de properties
-    - uso do vault
-    - cache de entities usando ehcache
+- `cpf`: obrigatório, filtra diretamente pelo índice (`cpf`,`category`).
+- `documentCategoryNames`: categorias permitidas (service filtra pelas que pertencem ao grupo PERSONAL).
+- `searchScope`: controla vencimento (ALL/VALID/EXPIRED/LATEST).
+- `versionType`: MAJOR/MINOR/ALL; ALL retorna a versão mais recente independente do tipo.
+
+A resposta é uma `Page<EntryPagination>` com dados estruturados para consumo pelo frontend.
+
+#### Endpoints removidos
+
+Os antigos `/byAuthor`, `/byMetadata`, `/byQuery` foram eliminados (eram CMIS/Alfresco). Qualquer necessidade futura deve ser reimplementada via Mongo.
+
+### CORS
+
+Configurável por propriedades (`dms.cors.allowed-origins`, `DMS_CORS_ALLOWED_ORIGINS`). Default permite `http://localhost:5173` para integração com o frontend.
+
+### Observabilidade
+
+- Actuator `/actuator/health`, `/actuator/prometheus`
+- Ehcache para cache de `documentCategory`
+
+### Execução local
+
+1. Exportar Java 21 (`JAVA_HOME`).
+2. Subir Mongo com os metadados do DMS.
+3. `./gradlew bootRun` (porta padrão 8081).
