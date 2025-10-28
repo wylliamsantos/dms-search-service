@@ -1,6 +1,5 @@
 package br.com.dms.controller;
 
-import br.com.dms.config.RestTemplateConfig;
 import br.com.dms.controller.request.SearchByCpfRequest;
 import br.com.dms.controller.response.pagination.EntryPagination;
 import br.com.dms.domain.core.SearchScope;
@@ -19,12 +18,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
-import org.springframework.context.annotation.Import;
-import org.springframework.boot.test.context.TestConfiguration;
 
 import java.util.Collections;
 
@@ -33,12 +26,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(value = SearchController.class, excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = RestTemplateConfig.class))
+@WebMvcTest(value = SearchController.class)
 @TestPropertySource(properties = {
         "spring.cloud.config.enabled=false",
         "spring.cloud.vault.enabled=false"
 })
-@Import(SearchControllerTest.TestRestTemplateBuilderConfig.class)
 class SearchControllerTest {
 
     @Autowired
@@ -123,13 +115,5 @@ class SearchControllerTest {
         Mockito.when(searchService.searchByMetadata(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(responseEntity);
         Mockito.when(searchService.searchByQuery(any(), any(), any(), any(), any(), any())).thenReturn(responseEntity);
         Mockito.when(searchService.searchByCpf(any(), any(), ArgumentMatchers.any(SearchByCpfRequest.class))).thenReturn(responseEntity);
-    }
-
-    @TestConfiguration
-    static class TestRestTemplateBuilderConfig {
-        @Bean
-        RestTemplateBuilder restTemplateBuilder() {
-            return new RestTemplateBuilder();
-        }
     }
 }
