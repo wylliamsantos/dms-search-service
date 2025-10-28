@@ -2,8 +2,6 @@ package br.com.dms.controller;
 
 import br.com.dms.controller.request.SearchByCpfRequest;
 import br.com.dms.controller.response.pagination.EntryPagination;
-import br.com.dms.domain.core.SearchScope;
-import br.com.dms.domain.core.VersionType;
 import br.com.dms.service.SearchService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,62 +38,14 @@ class SearchControllerTest {
     private SearchService searchService;
 
     @Test
-    @DisplayName("should delegate search by author")
-    void byAuthorDelegatesToService() throws Exception {
-        mockSearchResponse();
-
-        mockMvc.perform(post("/v1/search/byAuthor")
-                        .header("TransactionId", "tx-1")
-                        .header("Authorization", "Bearer token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("author", "john")
-                        .param("skipCount", "1")
-                        .param("maxItems", "5")
-                        .param("searchScope", SearchScope.ALL.name()))
-                .andExpect(status().isOk());
-
-        Mockito.verify(searchService).searchByAuthor(eq("tx-1"), eq("Bearer token"), eq("john"), eq(1), eq(SearchScope.ALL), eq(5));
-    }
-
-    @Test
-    @DisplayName("should delegate search by metadata")
-    void byMetadataDelegatesToService() throws Exception {
-        mockSearchResponse();
-
-        mockMvc.perform(post("/v1/search/byMetadata")
-                        .header("TransactionId", "tx-2")
-                        .header("Authorization", "Bearer token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("type", "contract")
-                        .param("metadata", "{\"foo\":\"bar\"}")
-                        .param("versionType", VersionType.MINOR.name()))
-                .andExpect(status().isOk());
-
-        Mockito.verify(searchService).searchByMetadata(eq("tx-2"), eq("Bearer token"), eq("contract"), any(), any(), eq("{\"foo\":\"bar\"}"), any(), eq(VersionType.MINOR));
-    }
-
-    @Test
-    @DisplayName("should delegate search by query")
-    void byQueryDelegatesToService() throws Exception {
-        mockSearchResponse();
-
-        mockMvc.perform(post("/v1/search/byQuery")
-                        .header("TransactionId", "tx-3")
-                        .header("Authorization", "Bearer token")
-                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                        .param("query", "select")
-                        .param("maxItems", "10"))
-                .andExpect(status().isOk());
-
-        Mockito.verify(searchService).searchByQuery(eq("tx-3"), eq("Bearer token"), eq("select"), any(), eq(10), eq(VersionType.MAJOR));
-    }
-
-    @Test
     @DisplayName("should delegate search by cpf")
     void byCpfDelegatesToService() throws Exception {
-        mockSearchResponse();
-
         String payload = "{\"cpf\":\"123\",\"searchScope\":\"ALL\",\"versionType\":\"MAJOR\",\"documentCategoryNames\":[\"cat\"]}";
+
+        Page<EntryPagination> page = new PageImpl<>(Collections.emptyList());
+        ResponseEntity<Page<EntryPagination>> responseEntity = ResponseEntity.ok(page);
+
+        Mockito.when(searchService.searchByCpf(any(), any(), ArgumentMatchers.any(SearchByCpfRequest.class))).thenReturn(responseEntity);
 
         mockMvc.perform(post("/v1/search/byCpf")
                         .header("TransactionId", "tx-4")
@@ -105,15 +55,5 @@ class SearchControllerTest {
                 .andExpect(status().isOk());
 
         Mockito.verify(searchService).searchByCpf(eq("tx-4"), eq("Bearer token"), any(SearchByCpfRequest.class));
-    }
-
-    private void mockSearchResponse() {
-        Page<EntryPagination> page = new PageImpl<>(Collections.emptyList());
-        ResponseEntity<Page<EntryPagination>> responseEntity = ResponseEntity.ok(page);
-
-        Mockito.when(searchService.searchByAuthor(any(), any(), any(), any(), any(), any())).thenReturn(responseEntity);
-        Mockito.when(searchService.searchByMetadata(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(responseEntity);
-        Mockito.when(searchService.searchByQuery(any(), any(), any(), any(), any(), any())).thenReturn(responseEntity);
-        Mockito.when(searchService.searchByCpf(any(), any(), ArgumentMatchers.any(SearchByCpfRequest.class))).thenReturn(responseEntity);
     }
 }

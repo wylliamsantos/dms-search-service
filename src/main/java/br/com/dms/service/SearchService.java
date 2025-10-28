@@ -115,38 +115,6 @@ public class SearchService {
         return ResponseEntity.ok(page);
     }
 
-    public ResponseEntity<Page<EntryPagination>> searchByAuthor(String transactionId,
-                                                                String authorization,
-                                                                String author,
-                                                                Integer skipCount,
-                                                                SearchScope searchScope,
-                                                                Integer maxItems) {
-        logger.warn("DMS - TransactionId: {} - searchByAuthor is no longer supported", transactionId);
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
-    }
-
-    public ResponseEntity<Page<EntryPagination>> searchByMetadata(String transactionId,
-                                                                  String authorization,
-                                                                  String type,
-                                                                  Integer skipCount,
-                                                                  Integer maxItems,
-                                                                  String metadata,
-                                                                  SearchScope searchScope,
-                                                                  VersionType versionType) {
-        logger.warn("DMS - TransactionId: {} - searchByMetadata is no longer supported", transactionId);
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
-    }
-
-    public ResponseEntity<Page<EntryPagination>> searchByQuery(String transactionId,
-                                                               String authorization,
-                                                               String query,
-                                                               Integer skipCount,
-                                                               Integer maxItems,
-                                                               VersionType versionType) {
-        logger.warn("DMS - TransactionId: {} - searchByQuery is no longer supported", transactionId);
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
-    }
-
     private void validateCpf(String cpf, String transactionId) {
         if (StringUtils.isBlank(cpf)) {
             throw new DmsBusinessException("CPF não informado", TypeException.VALID, transactionId);
