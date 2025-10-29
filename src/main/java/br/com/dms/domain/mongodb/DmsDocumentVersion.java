@@ -1,5 +1,6 @@
 package br.com.dms.domain.mongodb;
 
+import br.com.dms.domain.core.UploadStatus;
 import br.com.dms.domain.core.VersionType;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -40,6 +41,8 @@ public class DmsDocumentVersion implements Serializable {
     private Map<String, Object> metadata;
 
     private String mimeType;
+
+    private UploadStatus uploadStatus;
 
     public DmsDocumentVersion() {
     }
@@ -174,6 +177,14 @@ public class DmsDocumentVersion implements Serializable {
         this.mimeType = mimeType;
     }
 
+    public UploadStatus getUploadStatus() {
+        return uploadStatus;
+    }
+
+    public void setUploadStatus(UploadStatus uploadStatus) {
+        this.uploadStatus = uploadStatus;
+    }
+
     public static Builder of() {
         return new Builder();
     }
@@ -247,6 +258,11 @@ public class DmsDocumentVersion implements Serializable {
 
         public Builder mimeType(String mimeType) {
             dmsDocumentVersion.setMimeType(mimeType);
+            return this;
+        }
+
+        public Builder uploadStatus(UploadStatus uploadStatus) {
+            dmsDocumentVersion.setUploadStatus(uploadStatus);
             return this;
         }
 

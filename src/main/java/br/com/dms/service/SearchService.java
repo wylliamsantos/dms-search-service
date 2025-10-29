@@ -6,6 +6,7 @@ import br.com.dms.controller.response.pagination.EntryPagination;
 import br.com.dms.domain.core.DocumentGroup;
 import br.com.dms.domain.core.SearchScope;
 import br.com.dms.domain.core.VersionType;
+import br.com.dms.domain.core.UploadStatus;
 import br.com.dms.domain.mongodb.DocumentCategory;
 import br.com.dms.domain.mongodb.DmsDocument;
 import br.com.dms.domain.mongodb.DmsDocumentVersion;
@@ -96,7 +97,7 @@ public class SearchService {
         boolean loadAllVersions = VersionType.ALL.equals(request.getVersionType());
 
         for (DmsDocument document : documentsPage.getContent()) {
-            Optional<DmsDocumentVersion> versionOptional = resolveVersion(
+        Optional<DmsDocumentVersion> versionOptional = resolveVersion(
                 document.getId(),
                 loadAllVersions ? null : requestedVersionType,
                 request.getSearchScope()
@@ -146,7 +147,7 @@ public class SearchService {
     private Optional<DmsDocumentVersion> resolveVersion(String documentId,
                                                         VersionType requestedVersionType,
                                                         SearchScope searchScope) {
-        Optional<DmsDocumentVersion> latestVersion = dmsDocumentVersionRepository.findLastVersionByDmsDocumentId(documentId);
+        Optional<DmsDocumentVersion> latestVersion = findLastCompletedVersion(documentId);
         if (latestVersion.isEmpty()) {
             return Optional.empty();
         }
@@ -156,6 +157,7 @@ public class SearchService {
             version = dmsDocumentVersionRepository.findByDmsDocumentId(documentId)
                 .orElse(Collections.emptyList())
                 .stream()
+                .filter(this::isCompletedUpload)
                 .sorted(Comparator.comparing(DmsDocumentVersion::getVersionNumber, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
                 .filter(candidate -> matchesVersionType(candidate, requestedVersionType))
                 .findFirst()
@@ -171,6 +173,20 @@ public class SearchService {
         }
 
         return Optional.of(version);
+    }
+
+    private Optional<DmsDocumentVersion> findLastCompletedVersion(String documentId) {
+        return dmsDocumentVersionRepository.findByDmsDocumentId(documentId)
+            .orElse(Collections.emptyList())
+            .stream()
+            .filter(this::isCompletedUpload)
+            .sorted(Comparator.comparing(DmsDocumentVersion::getVersionNumber, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+            .findFirst();
+    }
+
+    private boolean isCompletedUpload(DmsDocumentVersion version) {
+        UploadStatus status = version.getUploadStatus();
+        return status == null || UploadStatus.COMPLETED.equals(status);
     }
 
     private boolean matchesVersionType(DmsDocumentVersion version, VersionType requestedVersionType) {
