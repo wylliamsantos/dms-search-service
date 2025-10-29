@@ -10,8 +10,6 @@ import br.com.dms.domain.core.UploadStatus;
 import br.com.dms.domain.mongodb.DocumentCategory;
 import br.com.dms.domain.mongodb.DmsDocument;
 import br.com.dms.domain.mongodb.DmsDocumentVersion;
-import br.com.dms.exception.DmsBusinessException;
-import br.com.dms.exception.TypeException;
 import br.com.dms.repository.mongo.DocumentCategoryRepository;
 import br.com.dms.repository.mongo.DmsDocumentRepository;
 import br.com.dms.repository.mongo.DmsDocumentVersionRepository;
@@ -64,8 +62,6 @@ public class SearchService {
                                                              SearchByCpfRequest request) {
         logger.info("DMS - TransactionId: {} - Start search by cpf - cpf: {}", transactionId, request.getCpf());
 
-        validateCpf(request.getCpf(), transactionId);
-
         List<String> requestedCategories = Optional.ofNullable(request.getDocumentCategoryNames())
             .filter(list -> !list.isEmpty())
             .orElse(Collections.emptyList());
@@ -89,15 +85,19 @@ public class SearchService {
             .map(DocumentCategory::getName)
             .toList();
 
-        Pageable pageable = PageRequest.of(0, resolvePageSize(), Sort.by(Sort.Direction.DESC, "id"));
-        Page<DmsDocument> documentsPage = dmsDocumentRepository.findByCpfAndCategoryIn(request.getCpf(), categoryNames, pageable);
+        int pageNumber = resolvePageNumber(request.getPage());
+        int pageSize = resolvePageSize(request.getSize());
+        Sort sort = Sort.by(Sort.Direction.DESC, "id");
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
 
-        List<EntryPagination> entries = new ArrayList<>();
+        List<DmsDocument> documents = dmsDocumentRepository.findByCpfAndCategoryIn(request.getCpf(), categoryNames, sort);
+
+        List<EntryPagination> allEntries = new ArrayList<>();
         VersionType requestedVersionType = Optional.ofNullable(request.getVersionType()).orElse(VersionType.MAJOR);
         boolean loadAllVersions = VersionType.ALL.equals(request.getVersionType());
 
-        for (DmsDocument document : documentsPage.getContent()) {
-        Optional<DmsDocumentVersion> versionOptional = resolveVersion(
+        for (DmsDocument document : documents) {
+            Optional<DmsDocumentVersion> versionOptional = resolveVersion(
                 document.getId(),
                 loadAllVersions ? null : requestedVersionType,
                 request.getSearchScope()
@@ -107,19 +107,18 @@ public class SearchService {
             }
 
             DmsDocumentVersion version = versionOptional.get();
-            entries.add(mapToEntry(document, version));
+            allEntries.add(mapToEntry(document, version));
         }
 
-        Page<EntryPagination> page = new PageImpl<>(entries, pageable, documentsPage.getTotalElements());
+        int totalElements = allEntries.size();
+        int fromIndex = Math.min(pageNumber * pageSize, totalElements);
+        int toIndex = Math.min(fromIndex + pageSize, totalElements);
+        List<EntryPagination> pageContent = fromIndex >= totalElements ? Collections.emptyList() : allEntries.subList(fromIndex, toIndex);
+
+        Page<EntryPagination> page = new PageImpl<>(pageContent, pageable, totalElements);
         logger.info("DMS - TransactionId: {} - End search by cpf - cpf: {} documentCount: {}", transactionId, request.getCpf(), page.getNumberOfElements());
 
         return ResponseEntity.ok(page);
-    }
-
-    private void validateCpf(String cpf, String transactionId) {
-        if (StringUtils.isBlank(cpf)) {
-            throw new DmsBusinessException("CPF não informado", TypeException.VALID, transactionId);
-        }
     }
 
     private EntryPagination mapToEntry(DmsDocument document, DmsDocumentVersion version) {
@@ -235,10 +234,21 @@ public class SearchService {
         return document.getMimeType();
     }
 
-    private Integer resolvePageSize() {
+    private int resolvePageSize(Integer requestedSize) {
+        if (requestedSize != null && requestedSize > 0) {
+            return requestedSize;
+        }
+
         String propertyDefaultMaxItems = environment.getProperty("dms.defaultMaxItems");
         int defaultMaxItems = propertyDefaultMaxItems == null ? 1000 : Integer.parseInt(propertyDefaultMaxItems);
         return Math.max(defaultMaxItems, 1);
+    }
+
+    private int resolvePageNumber(Integer requestedPage) {
+        if (requestedPage == null) {
+            return 0;
+        }
+        return Math.max(requestedPage, 0);
     }
 
     private String formatDate(LocalDateTime value) {
