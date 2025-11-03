@@ -9,6 +9,11 @@ spring:
       enabled: false
     vault:
       enabled: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/dms}
   data:
     mongodb:
       uri: mongodb://dms:dms@localhost:27017/dms?authSource=dms

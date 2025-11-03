@@ -11,10 +11,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/v1/search")
+@PreAuthorize("hasAuthority('ROLE_DOCUMENT_VIEWER')")
 public class SearchController {
 
     private final SearchService searchService;
