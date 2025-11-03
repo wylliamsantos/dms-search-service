@@ -9,13 +9,16 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Collections;
 
@@ -55,5 +58,13 @@ class SearchControllerTest {
                 .andExpect(status().isOk());
 
         Mockito.verify(searchService).searchByCpf(eq("tx-4"), eq("Bearer token"), any(SearchByCpfRequest.class));
+    }
+
+    @TestConfiguration
+    static class JwtDecoderTestConfiguration {
+        @Bean
+        JwtDecoder jwtDecoder() {
+            return Mockito.mock(JwtDecoder.class);
+        }
     }
 }
