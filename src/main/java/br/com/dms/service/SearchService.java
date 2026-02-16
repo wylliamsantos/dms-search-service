@@ -46,21 +46,26 @@ public class SearchService {
     private final DocumentCategoryRepository documentCategoryRepository;
     private final DmsDocumentRepository dmsDocumentRepository;
     private final DmsDocumentVersionRepository dmsDocumentVersionRepository;
+    private final TenantContextService tenantContextService;
 
     public SearchService(Environment environment,
                          DocumentCategoryRepository documentCategoryRepository,
                          DmsDocumentRepository dmsDocumentRepository,
-                         DmsDocumentVersionRepository dmsDocumentVersionRepository) {
+                         DmsDocumentVersionRepository dmsDocumentVersionRepository,
+                         TenantContextService tenantContextService) {
         this.environment = environment;
         this.documentCategoryRepository = documentCategoryRepository;
         this.dmsDocumentRepository = dmsDocumentRepository;
         this.dmsDocumentVersionRepository = dmsDocumentVersionRepository;
+        this.tenantContextService = tenantContextService;
     }
 
     public ResponseEntity<Page<EntryPagination>> searchByCpf(String transactionId,
                                                              String authorization,
                                                              SearchByCpfRequest request) {
         logger.info("DMS - TransactionId: {} - Start search by cpf - cpf: {}", transactionId, request.getCpf());
+
+        String tenantId = tenantContextService.requireTenantId(transactionId);
 
         List<String> requestedCategories = Optional.ofNullable(request.getDocumentCategoryNames())
             .filter(list -> !list.isEmpty())
@@ -71,7 +76,7 @@ public class SearchService {
             return ResponseEntity.ok(Page.empty());
         }
 
-        List<DocumentCategory> categories = documentCategoryRepository.findAll().stream()
+        List<DocumentCategory> categories = documentCategoryRepository.findByTenantId(tenantId).orElse(Collections.emptyList()).stream()
             .filter(category -> DocumentGroup.PERSONAL.equals(category.getDocumentGroup()))
             .filter(category -> requestedCategories.contains(category.getName()))
             .toList();
@@ -90,7 +95,7 @@ public class SearchService {
         Sort sort = Sort.by(Sort.Direction.DESC, "id");
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
 
-        List<DmsDocument> documents = dmsDocumentRepository.findByCpfAndCategoryIn(request.getCpf(), categoryNames, sort);
+        List<DmsDocument> documents = dmsDocumentRepository.findByTenantIdAndCpfAndCategoryIn(tenantId, request.getCpf(), categoryNames, sort);
 
         List<EntryPagination> allEntries = new ArrayList<>();
         VersionType requestedVersionType = Optional.ofNullable(request.getVersionType()).orElse(VersionType.MAJOR);
@@ -98,6 +103,7 @@ public class SearchService {
 
         for (DmsDocument document : documents) {
             Optional<DmsDocumentVersion> versionOptional = resolveVersion(
+                tenantId,
                 document.getId(),
                 loadAllVersions ? null : requestedVersionType,
                 request.getSearchScope()
@@ -143,17 +149,18 @@ public class SearchService {
         return entry;
     }
 
-    private Optional<DmsDocumentVersion> resolveVersion(String documentId,
+    private Optional<DmsDocumentVersion> resolveVersion(String tenantId,
+                                                        String documentId,
                                                         VersionType requestedVersionType,
                                                         SearchScope searchScope) {
-        Optional<DmsDocumentVersion> latestVersion = findLastCompletedVersion(documentId);
+        Optional<DmsDocumentVersion> latestVersion = findLastCompletedVersion(tenantId, documentId);
         if (latestVersion.isEmpty()) {
             return Optional.empty();
         }
 
         DmsDocumentVersion version = latestVersion.get();
         if (!matchesVersionType(version, requestedVersionType)) {
-            version = dmsDocumentVersionRepository.findByDmsDocumentId(documentId)
+            version = dmsDocumentVersionRepository.findByTenantIdAndDmsDocumentId(tenantId, documentId)
                 .orElse(Collections.emptyList())
                 .stream()
                 .filter(this::isCompletedUpload)
@@ -174,8 +181,8 @@ public class SearchService {
         return Optional.of(version);
     }
 
-    private Optional<DmsDocumentVersion> findLastCompletedVersion(String documentId) {
-        return dmsDocumentVersionRepository.findByDmsDocumentId(documentId)
+    private Optional<DmsDocumentVersion> findLastCompletedVersion(String tenantId, String documentId) {
+        return dmsDocumentVersionRepository.findByTenantIdAndDmsDocumentId(tenantId, documentId)
             .orElse(Collections.emptyList())
             .stream()
             .filter(this::isCompletedUpload)

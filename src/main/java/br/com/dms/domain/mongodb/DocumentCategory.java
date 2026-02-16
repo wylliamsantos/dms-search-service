@@ -12,6 +12,8 @@ public class DocumentCategory {
 	@Id
 	private String id;
 
+	private String tenantId;
+
 	private String name;
 
 	private String description;
@@ -39,6 +41,14 @@ public class DocumentCategory {
 
 	public void setId(String id) {
 		this.id = id;
+	}
+
+	public String getTenantId() {
+		return tenantId;
+	}
+
+	public void setTenantId(String tenantId) {
+		this.tenantId = tenantId;
 	}
 
 	public String getName() {

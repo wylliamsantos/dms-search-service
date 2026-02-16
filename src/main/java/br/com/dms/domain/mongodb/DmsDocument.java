@@ -8,11 +8,13 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.Map;
 
 @Document
-@CompoundIndex(def = "{'category': 1, 'cpf': 1}", name = "cpf_category_index")
+@CompoundIndex(def = "{'tenantId': 1, 'category': 1, 'cpf': 1}", name = "tenant_cpf_category_index")
 public class DmsDocument {
 
     @Id
     private String id;
+
+    private String tenantId;
 
     private String filename;
 
@@ -28,8 +30,9 @@ public class DmsDocument {
     public DmsDocument() {
     }
 
-    public DmsDocument(String id, String filename, String category, String mimeType, String cpf, Map<String, Object> metadata) {
+    public DmsDocument(String id, String tenantId, String filename, String category, String mimeType, String cpf, Map<String, Object> metadata) {
         this.id = id;
+        this.tenantId = tenantId;
         this.filename = filename;
         this.category = category;
         this.mimeType = mimeType;
@@ -43,6 +46,14 @@ public class DmsDocument {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 
     public String getFilename() {
@@ -99,6 +110,11 @@ public class DmsDocument {
 
         public Builder id(String id) {
             dmsDocument.setId(id);
+            return this;
+        }
+
+        public Builder tenantId(String tenantId) {
+            dmsDocument.setTenantId(tenantId);
             return this;
         }
 

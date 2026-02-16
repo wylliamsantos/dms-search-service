@@ -12,7 +12,7 @@ import java.util.List;
 @Repository
 public interface DmsDocumentRepository extends MongoRepository<DmsDocument, String> {
 
-    Page<DmsDocument> findByCpfAndCategoryIn(String cpf, List<String> categories, Pageable pageable);
+    Page<DmsDocument> findByTenantIdAndCpfAndCategoryIn(String tenantId, String cpf, List<String> categories, Pageable pageable);
 
-    List<DmsDocument> findByCpfAndCategoryIn(String cpf, List<String> categories, Sort sort);
+    List<DmsDocument> findByTenantIdAndCpfAndCategoryIn(String tenantId, String cpf, List<String> categories, Sort sort);
 }
