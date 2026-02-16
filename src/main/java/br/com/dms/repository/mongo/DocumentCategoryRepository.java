@@ -15,5 +15,8 @@ public interface DocumentCategoryRepository extends MongoRepository<DocumentCate
 
 	@Cacheable
 	Optional<DocumentCategory> findByName(String documentCategoryName);
+
+	@Cacheable
+	Optional<java.util.List<DocumentCategory>> findByTenantId(String tenantId);
 	
 }

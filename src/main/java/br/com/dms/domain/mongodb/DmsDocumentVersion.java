@@ -12,11 +12,13 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 @Document
-@CompoundIndex(def = "{'dmsDocumentId': 1, 'versionNumber': 1}", unique = true)
+@CompoundIndex(def = "{'tenantId': 1, 'dmsDocumentId': 1, 'versionNumber': 1}", unique = true)
 public class DmsDocumentVersion implements Serializable {
 
     @Id
     private String id;
+
+    private String tenantId;
 
     private String dmsDocumentId;
 
@@ -48,6 +50,7 @@ public class DmsDocumentVersion implements Serializable {
     }
 
     public DmsDocumentVersion(String id,
+                              String tenantId,
                               String dmsDocumentId,
                               BigDecimal versionNumber,
                               VersionType versionType,
@@ -60,6 +63,7 @@ public class DmsDocumentVersion implements Serializable {
                               Boolean alfrescoMigrated,
                               Map<String, Object> metadata) {
         this.id = id;
+        this.tenantId = tenantId;
         this.dmsDocumentId = dmsDocumentId;
         this.versionNumber = versionNumber;
         this.versionType = versionType;
@@ -79,6 +83,14 @@ public class DmsDocumentVersion implements Serializable {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+        this.tenantId = tenantId;
     }
 
     public String getDmsDocumentId() {
@@ -198,6 +210,11 @@ public class DmsDocumentVersion implements Serializable {
 
         public Builder id(String id) {
             dmsDocumentVersion.setId(id);
+            return this;
+        }
+
+        public Builder tenantId(String tenantId) {
+            dmsDocumentVersion.setTenantId(tenantId);
             return this;
         }
 

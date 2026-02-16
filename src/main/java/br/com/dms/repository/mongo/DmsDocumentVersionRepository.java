@@ -11,14 +11,14 @@ import java.util.Optional;
 @Repository
 public interface DmsDocumentVersionRepository extends MongoRepository<DmsDocumentVersion, String> {
 
-    Optional<DmsDocumentVersion> findByDmsDocumentIdAndVersionNumber(String dmsDocumentId, String versionNumber);
+    Optional<DmsDocumentVersion> findByTenantIdAndDmsDocumentIdAndVersionNumber(String tenantId, String dmsDocumentId, String versionNumber);
 
     @Aggregation(pipeline = {
-            "{ '$match': { 'dmsDocumentId' : ?0 } }",
+            "{ '$match': { 'tenantId': ?0, 'dmsDocumentId' : ?1 } }",
             "{ '$sort' : { 'versionNumber' : -1 } }",
             "{ '$limit' : 1 }"
     }, collation = "{ locale: 'pt', numericOrdering: true}")
-    Optional<DmsDocumentVersion> findLastVersionByDmsDocumentId(String dmsDocumentId);
+    Optional<DmsDocumentVersion> findLastVersionByTenantIdAndDmsDocumentId(String tenantId, String dmsDocumentId);
 
-    Optional<List<DmsDocumentVersion>> findByDmsDocumentId(String dmsDocumentId);
+    Optional<List<DmsDocumentVersion>> findByTenantIdAndDmsDocumentId(String tenantId, String dmsDocumentId);
 }
