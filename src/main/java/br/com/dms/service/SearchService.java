@@ -3,7 +3,6 @@ package br.com.dms.service;
 import br.com.dms.controller.request.SearchByCpfRequest;
 import br.com.dms.controller.response.pagination.Content;
 import br.com.dms.controller.response.pagination.EntryPagination;
-import br.com.dms.domain.core.DocumentGroup;
 import br.com.dms.domain.core.SearchScope;
 import br.com.dms.domain.core.VersionType;
 import br.com.dms.domain.core.UploadStatus;
@@ -77,12 +76,11 @@ public class SearchService {
         }
 
         List<DocumentCategory> categories = documentCategoryRepository.findByTenantId(tenantId).orElse(Collections.emptyList()).stream()
-            .filter(category -> DocumentGroup.PERSONAL.equals(category.getDocumentGroup()))
             .filter(category -> requestedCategories.contains(category.getName()))
             .toList();
 
         if (categories.isEmpty()) {
-            logger.info("DMS - TransactionId: {} - No categories matched PERSONAL group. Requested: {}", transactionId, requestedCategories);
+            logger.info("DMS - TransactionId: {} - No categories matched tenant catalog. Requested: {}", transactionId, requestedCategories);
             return ResponseEntity.ok(Page.empty());
         }
 
