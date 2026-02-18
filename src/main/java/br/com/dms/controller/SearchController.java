@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/v1/search")
-@PreAuthorize("hasAuthority('ROLE_DOCUMENT_VIEWER')")
+@PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN','ROLE_REVIEWER','ROLE_VIEWER','ROLE_DOCUMENT_VIEWER')")
 public class SearchController {
 
     private final SearchService searchService;
