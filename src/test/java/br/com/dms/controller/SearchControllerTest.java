@@ -57,8 +57,8 @@ class SearchControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"OWNER", "ADMIN", "REVIEWER", "VIEWER", "DOCUMENT_VIEWER"})
-    @DisplayName("should allow access for production roles")
+    @ValueSource(strings = {"owner", "admin", "reviewer", "viewer", "document_viewer", "OWNER", "ADMIN", "REVIEWER", "VIEWER", "DOCUMENT_VIEWER"})
+    @DisplayName("should allow access for production roles (lower/upper case)")
     void byCpfAllowsProductionRoles(String role) throws Exception {
         Mockito.when(jwtDecoder.decode(eq("token"))).thenReturn(jwtWithRoles(role));
 
