@@ -6,6 +6,8 @@ import br.com.dms.service.SearchService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,40 +49,68 @@ class SearchControllerTest {
     private JwtDecoder jwtDecoder;
 
     @BeforeEach
-    void setupJwtDecoder() {
-        Instant issuedAt = Instant.now();
-        Instant expiresAt = issuedAt.plusSeconds(60);
-        Map<String, Object> headers = Map.of("alg", "none");
-        Map<String, Object> claims = Map.of(
-                "realm_access", Map.of("roles", List.of("DOCUMENT_VIEWER"))
-        );
-
-        Jwt authenticatedJwt = new Jwt("token", issuedAt, expiresAt, headers, claims);
-        Mockito.when(jwtDecoder.decode(any())).thenReturn(authenticatedJwt);
-    }
-
-    @Test
-    @DisplayName("should delegate search by cpf")
-    void byCpfDelegatesToService() throws Exception {
-        String payload = "{\"cpf\":\"123\",\"searchScope\":\"ALL\",\"versionType\":\"MAJOR\",\"documentCategoryNames\":[\"cat\"]}";
-
+    void setupSearchService() {
         Page<EntryPagination> page = new PageImpl<>(Collections.emptyList());
         ResponseEntity<Page<EntryPagination>> responseEntity = ResponseEntity.ok(page);
+        Mockito.when(searchService.searchByCpf(any(), any(), ArgumentMatchers.any(SearchByCpfRequest.class)))
+                .thenReturn(responseEntity);
+    }
 
-        Mockito.when(searchService.searchByCpf(any(), any(), ArgumentMatchers.any(SearchByCpfRequest.class))).thenReturn(responseEntity);
+    @ParameterizedTest
+    @ValueSource(strings = {"owner", "admin", "reviewer", "viewer", "document_viewer", "OWNER", "ADMIN", "REVIEWER", "VIEWER", "DOCUMENT_VIEWER"})
+    @DisplayName("should allow access for production roles (lower/upper case)")
+    void byCpfAllowsProductionRoles(String role) throws Exception {
+        Mockito.when(jwtDecoder.decode(eq("token"))).thenReturn(jwtWithRoles(role));
 
         mockMvc.perform(post("/v1/search/byCpf")
                         .header("TransactionId", "tx-4")
                         .header("Authorization", "Bearer token")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(payload)
+                        .content(validPayload())
                         .with(request -> {
-                            request.setUserPrincipal(() -> "admin");
+                            request.setUserPrincipal(() -> "user");
                             return request;
                         }))
                 .andExpect(status().isOk());
-
-        Mockito.verify(searchService).searchByCpf(eq("tx-4"), eq("Bearer token"), any(SearchByCpfRequest.class));
     }
 
+    @Test
+    @DisplayName("should deny access for non-authorized role")
+    void byCpfDeniesUnauthorizedRole() throws Exception {
+        Mockito.when(jwtDecoder.decode(eq("token"))).thenReturn(jwtWithRoles("GUEST"));
+
+        mockMvc.perform(post("/v1/search/byCpf")
+                        .header("TransactionId", "tx-4")
+                        .header("Authorization", "Bearer token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validPayload()))
+                .andExpect(status().isForbidden());
+
+        Mockito.verify(searchService, Mockito.never()).searchByCpf(any(), any(), any(SearchByCpfRequest.class));
+    }
+
+    @Test
+    @DisplayName("should require authentication")
+    void byCpfRequiresAuthentication() throws Exception {
+        mockMvc.perform(post("/v1/search/byCpf")
+                        .header("TransactionId", "tx-4")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validPayload()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    private static String validPayload() {
+        return "{\"cpf\":\"123\",\"searchScope\":\"ALL\",\"versionType\":\"MAJOR\",\"documentCategoryNames\":[\"cat\"]}";
+    }
+
+    private static Jwt jwtWithRoles(String... roles) {
+        Instant issuedAt = Instant.now();
+        Instant expiresAt = issuedAt.plusSeconds(60);
+        Map<String, Object> headers = Map.of("alg", "none");
+        Map<String, Object> claims = Map.of(
+                "realm_access", Map.of("roles", List.of(roles))
+        );
+
+        return new Jwt("token", issuedAt, expiresAt, headers, claims);
+    }
 }
