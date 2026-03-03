@@ -25,6 +25,8 @@ public class DmsDocument {
 
     private String mimeType;
 
+    private String workflowStatus;
+
     private Map<String, Object> metadata;
 
     public DmsDocument() {
@@ -88,6 +90,14 @@ public class DmsDocument {
         this.mimeType = mimeType;
     }
 
+    public String getWorkflowStatus() {
+        return workflowStatus;
+    }
+
+    public void setWorkflowStatus(String workflowStatus) {
+        this.workflowStatus = workflowStatus;
+    }
+
     public Map<String, Object> getMetadata() {
         return metadata;
     }
@@ -130,6 +140,11 @@ public class DmsDocument {
 
         public Builder mimeType(String mimeType) {
             dmsDocument.setMimeType(mimeType);
+            return this;
+        }
+
+        public Builder workflowStatus(String workflowStatus) {
+            dmsDocument.setWorkflowStatus(workflowStatus);
             return this;
         }
 

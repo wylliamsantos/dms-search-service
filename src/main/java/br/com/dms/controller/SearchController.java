@@ -1,9 +1,8 @@
 package br.com.dms.controller;
 
+import br.com.dms.controller.request.SearchByBusinessKeyRequest;
 import br.com.dms.controller.request.SearchByCpfRequest;
 import br.com.dms.controller.response.pagination.EntryPagination;
-import br.com.dms.domain.core.SearchScope;
-import br.com.dms.domain.core.VersionType;
 import br.com.dms.service.SearchService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -26,11 +25,20 @@ public class SearchController {
         this.searchService = searchService;
     }
 
+    @PostMapping(value = "/byBusinessKey", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Page<EntryPagination>> byBusinessKey(@RequestHeader(name = "TransactionId") String transactionId,
+                                                                @RequestHeader(name = "Authorization") String authorization,
+                                                                @RequestBody @Valid SearchByBusinessKeyRequest request) {
+        logger.info("DMS search - TransactionId: {} - byBusinessKey type: {}", transactionId, request.getBusinessKeyType());
+        return searchService.searchByBusinessKey(transactionId, authorization, request);
+    }
+
+    // legado temporário para manter compatibilidade até remover clientes antigos
     @PostMapping(value = "/byCpf", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Page<EntryPagination>> byCpf(@RequestHeader(name = "TransactionId") String transactionId,
-                                   @RequestHeader(name = "Authorization") String authorization,
-                                   @RequestBody @Valid SearchByCpfRequest request) {
-        logger.info("DMS search - TransactionId: {} - byCpf cpf: {}", transactionId, request.getCpf());
+                                                       @RequestHeader(name = "Authorization") String authorization,
+                                                       @RequestBody @Valid SearchByCpfRequest request) {
+        logger.warn("DMS search - TransactionId: {} - endpoint legado byCpf chamado", transactionId);
         return searchService.searchByCpf(transactionId, authorization, request);
     }
 }
