@@ -23,6 +23,7 @@ public class EntryPagination implements Serializable {
 	private Content content;
 	private String version;
 	private String versionType;
+	private String workflowStatus;
 
 	public String getCreatedAt() {
 		return createdAt;
@@ -134,5 +135,13 @@ public class EntryPagination implements Serializable {
 
 	public void setVersionType(String versionType) {
 		this.versionType = versionType;
+	}
+
+	public String getWorkflowStatus() {
+		return workflowStatus;
+	}
+
+	public void setWorkflowStatus(String workflowStatus) {
+		this.workflowStatus = workflowStatus;
 	}
 }

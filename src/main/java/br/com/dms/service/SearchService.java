@@ -1,11 +1,12 @@
 package br.com.dms.service;
 
+import br.com.dms.controller.request.SearchByBusinessKeyRequest;
 import br.com.dms.controller.request.SearchByCpfRequest;
 import br.com.dms.controller.response.pagination.Content;
 import br.com.dms.controller.response.pagination.EntryPagination;
 import br.com.dms.domain.core.SearchScope;
-import br.com.dms.domain.core.VersionType;
 import br.com.dms.domain.core.UploadStatus;
+import br.com.dms.domain.core.VersionType;
 import br.com.dms.domain.mongodb.DocumentCategory;
 import br.com.dms.domain.mongodb.DmsDocument;
 import br.com.dms.domain.mongodb.DmsDocumentVersion;
@@ -21,7 +22,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -59,10 +60,12 @@ public class SearchService {
         this.tenantContextService = tenantContextService;
     }
 
-    public ResponseEntity<Page<EntryPagination>> searchByCpf(String transactionId,
-                                                             String authorization,
-                                                             SearchByCpfRequest request) {
-        logger.info("DMS - TransactionId: {} - Start search by cpf - cpf: {}", transactionId, request.getCpf());
+    public ResponseEntity<Page<EntryPagination>> searchByBusinessKey(String transactionId,
+                                                                     String authorization,
+                                                                     SearchByBusinessKeyRequest request) {
+        String businessKeyType = StringUtils.trimToEmpty(request.getBusinessKeyType()).toLowerCase(Locale.ROOT);
+        String businessKeyValue = StringUtils.trimToEmpty(request.getBusinessKeyValue());
+        logger.info("DMS - TransactionId: {} - Start search by businessKey type={} value={} ", transactionId, businessKeyType, businessKeyValue);
 
         String tenantId = tenantContextService.requireTenantId(transactionId);
 
@@ -84,16 +87,17 @@ public class SearchService {
             return ResponseEntity.ok(Page.empty());
         }
 
-        List<String> categoryNames = categories.stream()
-            .map(DocumentCategory::getName)
-            .toList();
+        List<String> categoryNames = categories.stream().map(DocumentCategory::getName).toList();
 
         int pageNumber = resolvePageNumber(request.getPage());
         int pageSize = resolvePageSize(request.getSize());
         Sort sort = Sort.by(Sort.Direction.DESC, "id");
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
 
-        List<DmsDocument> documents = dmsDocumentRepository.findByTenantIdAndCpfAndCategoryIn(tenantId, request.getCpf(), categoryNames, sort);
+        List<DmsDocument> scopedDocuments = dmsDocumentRepository.findByTenantIdAndCategoryIn(tenantId, categoryNames, sort);
+        List<DmsDocument> documents = scopedDocuments.stream()
+            .filter(document -> matchesBusinessKey(document, businessKeyType, businessKeyValue))
+            .toList();
 
         List<EntryPagination> allEntries = new ArrayList<>();
         VersionType requestedVersionType = Optional.ofNullable(request.getVersionType()).orElse(VersionType.MAJOR);
@@ -120,9 +124,45 @@ public class SearchService {
         List<EntryPagination> pageContent = fromIndex >= totalElements ? Collections.emptyList() : allEntries.subList(fromIndex, toIndex);
 
         Page<EntryPagination> page = new PageImpl<>(pageContent, pageable, totalElements);
-        logger.info("DMS - TransactionId: {} - End search by cpf - cpf: {} documentCount: {}", transactionId, request.getCpf(), page.getNumberOfElements());
+        logger.info("DMS - TransactionId: {} - End search by businessKey type={} results={}", transactionId, businessKeyType, page.getNumberOfElements());
 
         return ResponseEntity.ok(page);
+    }
+
+    // compat legado
+    public ResponseEntity<Page<EntryPagination>> searchByCpf(String transactionId,
+                                                             String authorization,
+                                                             SearchByCpfRequest request) {
+        SearchByBusinessKeyRequest adapted = new SearchByBusinessKeyRequest();
+        adapted.setBusinessKeyType("cpf");
+        adapted.setBusinessKeyValue(request.getCpf());
+        adapted.setDocumentCategoryNames(request.getDocumentCategoryNames());
+        adapted.setVersionType(request.getVersionType());
+        adapted.setSearchScope(request.getSearchScope());
+        adapted.setPage(request.getPage());
+        adapted.setSize(request.getSize());
+        return searchByBusinessKey(transactionId, authorization, adapted);
+    }
+
+    private boolean matchesBusinessKey(DmsDocument document, String businessKeyType, String businessKeyValue) {
+        if (StringUtils.isBlank(businessKeyType) || StringUtils.isBlank(businessKeyValue)) {
+            return false;
+        }
+        String targetValue = StringUtils.trimToEmpty(businessKeyValue);
+
+        Object metadataValue = Optional.ofNullable(document.getMetadata())
+            .map(map -> map.get(businessKeyType))
+            .orElse(null);
+
+        if (metadataValue != null && targetValue.equalsIgnoreCase(String.valueOf(metadataValue).trim())) {
+            return true;
+        }
+
+        if ("cpf".equalsIgnoreCase(businessKeyType) && StringUtils.isNotBlank(document.getCpf())) {
+            return targetValue.equalsIgnoreCase(document.getCpf().trim());
+        }
+
+        return false;
     }
 
     private EntryPagination mapToEntry(DmsDocument document, DmsDocumentVersion version) {
@@ -135,6 +175,7 @@ public class SearchService {
         entry.setIsFolder(false);
         entry.setVersionType(version.getVersionType() != null ? version.getVersionType().name() : null);
         entry.setVersion(version.getVersionNumber() != null ? version.getVersionNumber().toPlainString() : null);
+        entry.setWorkflowStatus(document.getWorkflowStatus());
         entry.setCreatedAt(formatDate(version.getCreationDate()));
         entry.setModifiedAt(formatDate(Optional.ofNullable(version.getModifiedAt()).orElse(version.getCreationDate())));
 
