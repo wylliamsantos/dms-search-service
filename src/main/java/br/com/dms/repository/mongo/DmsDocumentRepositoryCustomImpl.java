@@ -37,7 +37,7 @@ public class DmsDocumentRepositoryCustomImpl implements DmsDocumentRepositoryCus
         query.addCriteria(Criteria.where("tenantId").is(tenantId));
         query.addCriteria(Criteria.where("category").in(categories));
 
-        if (sort != null && sort.isSorted()) {
+        if (StringUtils.isBlank(textQuery) && sort != null && sort.isSorted()) {
             query.with(sort);
         }
 

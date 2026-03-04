@@ -131,7 +131,7 @@ public class SearchService {
             if (!matchesTextQuery(document, version, normalizedTextQuery)) {
                 continue;
             }
-            allEntries.add(mapToEntry(document, version));
+            allEntries.add(mapToEntry(document, version, normalizedTextQuery));
         }
 
         int totalElements = allEntries.size();
@@ -198,7 +198,7 @@ public class SearchService {
         return false;
     }
 
-    private EntryPagination mapToEntry(DmsDocument document, DmsDocumentVersion version) {
+    private EntryPagination mapToEntry(DmsDocument document, DmsDocumentVersion version, String textQuery) {
         EntryPagination entry = new EntryPagination();
         entry.setId(document.getId());
         entry.setName(document.getFilename());
@@ -217,6 +217,7 @@ public class SearchService {
         content.setMimeTypeName(content.getMimeType());
         content.setSizeInBytes(convertToInteger(version.getFileSize()));
         entry.setContent(content);
+        entry.setHighlights(buildHighlights(document, version, textQuery));
 
         return entry;
     }
@@ -304,6 +305,60 @@ public class SearchService {
 
     private boolean containsIgnoreCase(String value, String textQuery) {
         return StringUtils.isNotBlank(value) && value.toLowerCase(Locale.ROOT).contains(textQuery);
+    }
+
+    private List<String> buildHighlights(DmsDocument document, DmsDocumentVersion version, String textQuery) {
+        if (StringUtils.isBlank(textQuery)) {
+            return Collections.emptyList();
+        }
+
+        List<String> highlights = new ArrayList<>();
+        appendHighlight(highlights, "Nome", document.getFilename(), textQuery);
+        appendHighlight(highlights, "Categoria", document.getCategory(), textQuery);
+        appendHighlight(highlights, "CPF", document.getCpf(), textQuery);
+        appendHighlightFromMap(highlights, "Doc", document.getMetadata(), textQuery);
+        appendHighlightFromMap(highlights, "Versão", version.getMetadata(), textQuery);
+
+        return highlights.stream().limit(3).toList();
+    }
+
+    private void appendHighlightFromMap(List<String> highlights, String label, Map<String, Object> metadata, String textQuery) {
+        if (metadata == null || metadata.isEmpty()) {
+            return;
+        }
+        metadata.forEach((key, value) -> {
+            if (value == null || highlights.size() >= 3) {
+                return;
+            }
+            String serialized = String.valueOf(value);
+            if (containsIgnoreCase(serialized, textQuery)) {
+                highlights.add(label + "." + key + ": " + excerpt(serialized, textQuery));
+            }
+        });
+    }
+
+    private void appendHighlight(List<String> highlights, String label, String value, String textQuery) {
+        if (StringUtils.isBlank(value) || highlights.size() >= 3) {
+            return;
+        }
+        if (containsIgnoreCase(value, textQuery)) {
+            highlights.add(label + ": " + excerpt(value, textQuery));
+        }
+    }
+
+    private String excerpt(String value, String textQuery) {
+        String lowerValue = value.toLowerCase(Locale.ROOT);
+        int matchIndex = lowerValue.indexOf(textQuery);
+        if (matchIndex < 0) {
+            return value;
+        }
+
+        int radius = 30;
+        int start = Math.max(0, matchIndex - radius);
+        int end = Math.min(value.length(), matchIndex + textQuery.length() + radius);
+        String prefix = start > 0 ? "..." : "";
+        String suffix = end < value.length() ? "..." : "";
+        return prefix + value.substring(start, end).trim() + suffix;
     }
 
     private boolean matchesScope(DmsDocumentVersion version, SearchScope scope) {
