@@ -1,5 +1,8 @@
 package br.com.dms.service;
 
+import br.com.dms.audit.AuditActorResolver;
+import br.com.dms.audit.AuditEventMessage;
+import br.com.dms.audit.AuditEventPublisher;
 import br.com.dms.controller.request.SearchByBusinessKeyRequest;
 import br.com.dms.controller.request.SearchByCpfRequest;
 import br.com.dms.controller.response.pagination.Content;
@@ -25,6 +28,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -47,17 +51,23 @@ public class SearchService {
     private final DmsDocumentRepository dmsDocumentRepository;
     private final DmsDocumentVersionRepository dmsDocumentVersionRepository;
     private final TenantContextService tenantContextService;
+    private final AuditEventPublisher auditEventPublisher;
+    private final AuditActorResolver auditActorResolver;
 
     public SearchService(Environment environment,
                          DocumentCategoryRepository documentCategoryRepository,
                          DmsDocumentRepository dmsDocumentRepository,
                          DmsDocumentVersionRepository dmsDocumentVersionRepository,
-                         TenantContextService tenantContextService) {
+                         TenantContextService tenantContextService,
+                         AuditEventPublisher auditEventPublisher,
+                         AuditActorResolver auditActorResolver) {
         this.environment = environment;
         this.documentCategoryRepository = documentCategoryRepository;
         this.dmsDocumentRepository = dmsDocumentRepository;
         this.dmsDocumentVersionRepository = dmsDocumentVersionRepository;
         this.tenantContextService = tenantContextService;
+        this.auditEventPublisher = auditEventPublisher;
+        this.auditActorResolver = auditActorResolver;
     }
 
     public ResponseEntity<Page<EntryPagination>> searchByBusinessKey(String transactionId,
@@ -122,6 +132,23 @@ public class SearchService {
         int fromIndex = Math.min(pageNumber * pageSize, totalElements);
         int toIndex = Math.min(fromIndex + pageSize, totalElements);
         List<EntryPagination> pageContent = fromIndex >= totalElements ? Collections.emptyList() : allEntries.subList(fromIndex, toIndex);
+
+        for (EntryPagination entry : pageContent) {
+            Map<String, Object> attributes = new java.util.HashMap<>();
+            if (entry.getNodeType() != null) attributes.put("category", entry.getNodeType());
+            if (entry.getVersion() != null) attributes.put("version", entry.getVersion());
+            auditEventPublisher.publish(new AuditEventMessage(
+                "DOCUMENT_VIEWED",
+                Instant.now(),
+                auditActorResolver.resolveUserId(),
+                tenantId,
+                "DOCUMENT",
+                entry.getId(),
+                entry.getName(),
+                null,
+                attributes
+            ));
+        }
 
         Page<EntryPagination> page = new PageImpl<>(pageContent, pageable, totalElements);
         logger.info("DMS - TransactionId: {} - End search by businessKey type={} results={}", transactionId, businessKeyType, page.getNumberOfElements());
