@@ -109,6 +109,8 @@ public class SearchService {
             .filter(document -> matchesBusinessKey(document, businessKeyType, businessKeyValue))
             .toList();
 
+        String normalizedTextQuery = StringUtils.trimToEmpty(request.getTextQuery()).toLowerCase(Locale.ROOT);
+
         List<EntryPagination> allEntries = new ArrayList<>();
         VersionType requestedVersionType = Optional.ofNullable(request.getVersionType()).orElse(VersionType.MAJOR);
         boolean loadAllVersions = VersionType.ALL.equals(request.getVersionType());
@@ -125,6 +127,9 @@ public class SearchService {
             }
 
             DmsDocumentVersion version = versionOptional.get();
+            if (!matchesTextQuery(document, version, normalizedTextQuery)) {
+                continue;
+            }
             allEntries.add(mapToEntry(document, version));
         }
 
@@ -266,6 +271,38 @@ public class SearchService {
             return true;
         }
         return requestedVersionType.equals(version.getVersionType());
+    }
+
+    private boolean matchesTextQuery(DmsDocument document, DmsDocumentVersion version, String textQuery) {
+        if (StringUtils.isBlank(textQuery)) {
+            return true;
+        }
+
+        if (containsIgnoreCase(document.getFilename(), textQuery) ||
+            containsIgnoreCase(document.getCategory(), textQuery) ||
+            containsIgnoreCase(document.getCpf(), textQuery)) {
+            return true;
+        }
+
+        if (mapContainsValue(document.getMetadata(), textQuery) || mapContainsValue(version.getMetadata(), textQuery)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean mapContainsValue(Map<String, Object> data, String textQuery) {
+        if (data == null || data.isEmpty()) {
+            return false;
+        }
+        return data.values().stream()
+            .filter(java.util.Objects::nonNull)
+            .map(String::valueOf)
+            .anyMatch(value -> containsIgnoreCase(value, textQuery));
+    }
+
+    private boolean containsIgnoreCase(String value, String textQuery) {
+        return StringUtils.isNotBlank(value) && value.toLowerCase(Locale.ROOT).contains(textQuery);
     }
 
     private boolean matchesScope(DmsDocumentVersion version, SearchScope scope) {
