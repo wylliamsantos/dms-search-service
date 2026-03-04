@@ -23,6 +23,9 @@ public class DmsDocument {
     @Indexed(name = "cpf_index")
     private String cpf;
 
+    @TextIndexed(weight = 2)
+    private String ocrText;
+
     private String mimeType;
 
     private String workflowStatus;
@@ -80,6 +83,14 @@ public class DmsDocument {
 
     public void setCpf(String cpf) {
         this.cpf = cpf;
+    }
+
+    public String getOcrText() {
+        return ocrText;
+    }
+
+    public void setOcrText(String ocrText) {
+        this.ocrText = ocrText;
     }
 
     public String getMimeType() {
@@ -150,6 +161,11 @@ public class DmsDocument {
 
         public Builder cpf(String cpf) {
             dmsDocument.setCpf(cpf);
+            return this;
+        }
+
+        public Builder ocrText(String ocrText) {
+            dmsDocument.setOcrText(ocrText);
             return this;
         }
 
