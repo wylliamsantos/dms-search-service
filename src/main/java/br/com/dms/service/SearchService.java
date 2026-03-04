@@ -282,7 +282,8 @@ public class SearchService {
 
         if (containsIgnoreCase(document.getFilename(), textQuery) ||
             containsIgnoreCase(document.getCategory(), textQuery) ||
-            containsIgnoreCase(document.getCpf(), textQuery)) {
+            containsIgnoreCase(document.getCpf(), textQuery) ||
+            containsIgnoreCase(document.getOcrText(), textQuery)) {
             return true;
         }
 
@@ -316,6 +317,7 @@ public class SearchService {
         appendHighlight(highlights, "Nome", document.getFilename(), textQuery);
         appendHighlight(highlights, "Categoria", document.getCategory(), textQuery);
         appendHighlight(highlights, "CPF", document.getCpf(), textQuery);
+        appendHighlight(highlights, "OCR", document.getOcrText(), textQuery);
         appendHighlightFromMap(highlights, "Doc", document.getMetadata(), textQuery);
         appendHighlightFromMap(highlights, "Versão", version.getMetadata(), textQuery);
 
