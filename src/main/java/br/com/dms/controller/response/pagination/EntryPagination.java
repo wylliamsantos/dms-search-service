@@ -1,6 +1,7 @@
 package br.com.dms.controller.response.pagination;
 
 import java.io.Serializable;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -24,6 +25,7 @@ public class EntryPagination implements Serializable {
 	private String version;
 	private String versionType;
 	private String workflowStatus;
+	private List<String> highlights;
 
 	public String getCreatedAt() {
 		return createdAt;
@@ -143,5 +145,13 @@ public class EntryPagination implements Serializable {
 
 	public void setWorkflowStatus(String workflowStatus) {
 		this.workflowStatus = workflowStatus;
+	}
+
+	public List<String> getHighlights() {
+		return highlights;
+	}
+
+	public void setHighlights(List<String> highlights) {
+		this.highlights = highlights;
 	}
 }

@@ -3,6 +3,7 @@ package br.com.dms.domain.mongodb;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.index.TextIndexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Map;
@@ -16,12 +17,18 @@ public class DmsDocument {
 
     private String tenantId;
 
+    @TextIndexed(weight = 8)
     private String filename;
 
+    @TextIndexed(weight = 4)
     private String category;
 
     @Indexed(name = "cpf_index")
+    @TextIndexed(weight = 6)
     private String cpf;
+
+    @TextIndexed(weight = 2)
+    private String ocrText;
 
     private String mimeType;
 
@@ -80,6 +87,14 @@ public class DmsDocument {
 
     public void setCpf(String cpf) {
         this.cpf = cpf;
+    }
+
+    public String getOcrText() {
+        return ocrText;
+    }
+
+    public void setOcrText(String ocrText) {
+        this.ocrText = ocrText;
     }
 
     public String getMimeType() {
@@ -150,6 +165,11 @@ public class DmsDocument {
 
         public Builder cpf(String cpf) {
             dmsDocument.setCpf(cpf);
+            return this;
+        }
+
+        public Builder ocrText(String ocrText) {
+            dmsDocument.setOcrText(ocrText);
             return this;
         }
 
