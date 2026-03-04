@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface DmsDocumentRepository extends MongoRepository<DmsDocument, String> {
+public interface DmsDocumentRepository extends MongoRepository<DmsDocument, String>, DmsDocumentRepositoryCustom {
 
     List<DmsDocument> findByTenantIdAndCategoryIn(String tenantId, List<String> categories, Sort sort);
 }

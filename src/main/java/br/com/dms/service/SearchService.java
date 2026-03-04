@@ -104,12 +104,13 @@ public class SearchService {
         Sort sort = Sort.by(Sort.Direction.DESC, "id");
         Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
 
-        List<DmsDocument> scopedDocuments = dmsDocumentRepository.findByTenantIdAndCategoryIn(tenantId, categoryNames, sort);
+        String textQuery = StringUtils.trimToEmpty(request.getTextQuery());
+        List<DmsDocument> scopedDocuments = dmsDocumentRepository.searchByTenantCategoryAndText(tenantId, categoryNames, textQuery, sort);
         List<DmsDocument> documents = scopedDocuments.stream()
             .filter(document -> matchesBusinessKey(document, businessKeyType, businessKeyValue))
             .toList();
 
-        String normalizedTextQuery = StringUtils.trimToEmpty(request.getTextQuery()).toLowerCase(Locale.ROOT);
+        String normalizedTextQuery = textQuery.toLowerCase(Locale.ROOT);
 
         List<EntryPagination> allEntries = new ArrayList<>();
         VersionType requestedVersionType = Optional.ofNullable(request.getVersionType()).orElse(VersionType.MAJOR);

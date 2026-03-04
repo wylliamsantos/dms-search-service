@@ -3,6 +3,7 @@ package br.com.dms.domain.mongodb;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.index.TextIndexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.Map;
@@ -16,11 +17,14 @@ public class DmsDocument {
 
     private String tenantId;
 
+    @TextIndexed(weight = 8)
     private String filename;
 
+    @TextIndexed(weight = 4)
     private String category;
 
     @Indexed(name = "cpf_index")
+    @TextIndexed(weight = 6)
     private String cpf;
 
     private String mimeType;
