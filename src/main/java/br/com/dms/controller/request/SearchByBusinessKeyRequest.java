@@ -29,6 +29,8 @@ public class SearchByBusinessKeyRequest {
     @Min(1)
     private Integer size;
 
+    private String textQuery;
+
     public SearchScope getSearchScope() {
         return searchScope;
     }
@@ -83,5 +85,13 @@ public class SearchByBusinessKeyRequest {
 
     public void setSize(Integer size) {
         this.size = size;
+    }
+
+    public String getTextQuery() {
+        return textQuery;
+    }
+
+    public void setTextQuery(String textQuery) {
+        this.textQuery = textQuery;
     }
 }
