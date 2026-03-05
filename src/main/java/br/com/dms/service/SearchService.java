@@ -48,6 +48,9 @@ public class SearchService {
 
     private static final Logger logger = LoggerFactory.getLogger(SearchService.class);
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    private static final int SUGGESTIONS_FETCH_MULTIPLIER = 12;
+    private static final int SUGGESTIONS_FETCH_MIN = 120;
+    private static final int SUGGESTIONS_FETCH_MAX = 800;
 
     private final Environment environment;
     private final DocumentCategoryRepository documentCategoryRepository;
@@ -203,9 +206,11 @@ public class SearchService {
             .toList();
 
         Sort sort = Sort.by(Sort.Direction.DESC, "id");
+        int fetchLimit = Math.max(SUGGESTIONS_FETCH_MIN, Math.min(maxItems * SUGGESTIONS_FETCH_MULTIPLIER, SUGGESTIONS_FETCH_MAX));
+        Pageable suggestionPageable = PageRequest.of(0, fetchLimit, sort);
         List<DmsDocument> documents = targetCategories.isEmpty()
-            ? dmsDocumentRepository.findByTenantId(tenantId, sort)
-            : dmsDocumentRepository.findByTenantIdAndCategoryIn(tenantId, targetCategories, sort);
+            ? dmsDocumentRepository.findByTenantId(tenantId, suggestionPageable)
+            : dmsDocumentRepository.findByTenantIdAndCategoryIn(tenantId, targetCategories, suggestionPageable);
 
         Set<String> suggestions = new LinkedHashSet<>();
         for (DmsDocument document : documents) {
