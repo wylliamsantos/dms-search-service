@@ -58,6 +58,8 @@ class SearchControllerTest {
         ResponseEntity<Page<EntryPagination>> responseEntity = ResponseEntity.ok(page);
         Mockito.when(searchService.searchByCpf(any(), any(), ArgumentMatchers.any(SearchByCpfRequest.class)))
                 .thenReturn(responseEntity);
+        Mockito.when(searchService.suggestions(any(), any(), any(), any()))
+                .thenReturn(ResponseEntity.ok(List.of("contrato", "banco")));
     }
 
     @ParameterizedTest
@@ -91,6 +93,19 @@ class SearchControllerTest {
                 .andExpect(status().isForbidden());
 
         Mockito.verify(searchService, Mockito.never()).searchByCpf(any(), any(), any(SearchByCpfRequest.class));
+    }
+
+    @Test
+    @DisplayName("should allow suggestions for authorized role")
+    void suggestionsAllowsAuthorizedRole() throws Exception {
+        Mockito.when(jwtDecoder.decode(eq("token"))).thenReturn(jwtWithRoles("ADMIN"));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/v1/search/suggestions")
+                        .header("TransactionId", "tx-4")
+                        .header("Authorization", "Bearer token")
+                        .param("q", "con")
+                        .param("categories", "Contrato"))
+                .andExpect(status().isOk());
     }
 
     @Test

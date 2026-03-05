@@ -35,10 +35,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class SearchService {
@@ -179,6 +182,78 @@ public class SearchService {
         adapted.setPage(request.getPage());
         adapted.setSize(request.getSize());
         return searchByBusinessKey(transactionId, authorization, adapted);
+    }
+
+    public ResponseEntity<List<String>> suggestions(String transactionId,
+                                                    String query,
+                                                    List<String> categories,
+                                                    Integer limit) {
+        String normalizedQuery = StringUtils.trimToEmpty(query).toLowerCase(Locale.ROOT);
+        if (normalizedQuery.length() < 2) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+
+        String tenantId = tenantContextService.requireTenantId(transactionId);
+        int maxItems = Math.max(1, Math.min(Optional.ofNullable(limit).orElse(10), 20));
+
+        List<String> targetCategories = Optional.ofNullable(categories)
+            .orElse(Collections.emptyList())
+            .stream()
+            .filter(StringUtils::isNotBlank)
+            .toList();
+
+        Sort sort = Sort.by(Sort.Direction.DESC, "id");
+        List<DmsDocument> documents = targetCategories.isEmpty()
+            ? dmsDocumentRepository.findByTenantId(tenantId, sort)
+            : dmsDocumentRepository.findByTenantIdAndCategoryIn(tenantId, targetCategories, sort);
+
+        Set<String> suggestions = new LinkedHashSet<>();
+        for (DmsDocument document : documents) {
+            collectSuggestion(suggestions, document.getCategory(), normalizedQuery);
+            collectSuggestion(suggestions, document.getFilename(), normalizedQuery);
+            collectSuggestion(suggestions, document.getCpf(), normalizedQuery);
+            collectMetadataSuggestions(suggestions, document.getMetadata(), normalizedQuery);
+            if (suggestions.size() >= maxItems) {
+                break;
+            }
+        }
+
+        List<String> ordered = suggestions.stream()
+            .sorted(Comparator.comparingInt(String::length).thenComparing(String::compareToIgnoreCase))
+            .limit(maxItems)
+            .collect(Collectors.toList());
+
+        return ResponseEntity.ok(ordered);
+    }
+
+    private void collectMetadataSuggestions(Set<String> suggestions, Map<String, Object> metadata, String query) {
+        if (metadata == null || metadata.isEmpty()) {
+            return;
+        }
+
+        metadata.forEach((key, value) -> {
+            collectSuggestion(suggestions, key, query);
+            if (value != null) {
+                collectSuggestion(suggestions, String.valueOf(value), query);
+            }
+        });
+    }
+
+    private void collectSuggestion(Set<String> suggestions, String rawValue, String query) {
+        if (StringUtils.isBlank(rawValue)) {
+            return;
+        }
+
+        String value = rawValue.trim();
+        if (value.length() < 2 || value.length() > 80) {
+            return;
+        }
+
+        if (!value.toLowerCase(Locale.ROOT).contains(query)) {
+            return;
+        }
+
+        suggestions.add(value);
     }
 
     private boolean matchesBusinessKey(DmsDocument document, String businessKeyType, String businessKeyValue) {
