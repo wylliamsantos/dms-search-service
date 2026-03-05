@@ -6,8 +6,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.TextCriteria;
-import org.springframework.data.mongodb.core.query.TextQuery;
+import java.util.regex.Pattern;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -26,18 +25,20 @@ public class DmsDocumentRepositoryCustomImpl implements DmsDocumentRepositoryCus
                                                            List<String> categories,
                                                            String textQuery,
                                                            Sort sort) {
-        Query query;
-        if (StringUtils.isNotBlank(textQuery)) {
-            TextCriteria textCriteria = TextCriteria.forDefaultLanguage().matching(textQuery.trim());
-            query = TextQuery.queryText(textCriteria).sortByScore();
-        } else {
-            query = new Query();
-        }
-
+        Query query = new Query();
         query.addCriteria(Criteria.where("tenantId").is(tenantId));
         query.addCriteria(Criteria.where("category").in(categories));
 
-        if (StringUtils.isBlank(textQuery) && sort != null && sort.isSorted()) {
+        if (StringUtils.isNotBlank(textQuery)) {
+            String safe = Pattern.quote(textQuery.trim());
+            String regex = ".*" + safe + ".*";
+            query.addCriteria(new Criteria().orOperator(
+                Criteria.where("filename").regex(regex, "i"),
+                Criteria.where("category").regex(regex, "i"),
+                Criteria.where("cpf").regex(regex, "i"),
+                Criteria.where("ocrText").regex(regex, "i")
+            ));
+        } else if (sort != null && sort.isSorted()) {
             query.with(sort);
         }
 
