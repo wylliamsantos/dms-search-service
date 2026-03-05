@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/v1/search")
 @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN','ROLE_REVIEWER','ROLE_VIEWER','ROLE_DOCUMENT_VIEWER')")
@@ -31,6 +33,15 @@ public class SearchController {
                                                                 @RequestBody @Valid SearchByBusinessKeyRequest request) {
         logger.info("DMS search - TransactionId: {} - byBusinessKey type: {}", transactionId, request.getBusinessKeyType());
         return searchService.searchByBusinessKey(transactionId, authorization, request);
+    }
+
+    @GetMapping(value = "/suggestions", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<String>> suggestions(@RequestHeader(name = "TransactionId") String transactionId,
+                                                    @RequestParam(name = "q") String query,
+                                                    @RequestParam(name = "categories", required = false) List<String> categories,
+                                                    @RequestParam(name = "limit", required = false) Integer limit) {
+        logger.info("DMS search - TransactionId: {} - suggestions query={}", transactionId, query);
+        return searchService.suggestions(transactionId, query, categories, limit);
     }
 
     // legado temporário para manter compatibilidade até remover clientes antigos

@@ -11,4 +11,6 @@ import java.util.List;
 public interface DmsDocumentRepository extends MongoRepository<DmsDocument, String>, DmsDocumentRepositoryCustom {
 
     List<DmsDocument> findByTenantIdAndCategoryIn(String tenantId, List<String> categories, Sort sort);
+
+    List<DmsDocument> findByTenantId(String tenantId, Sort sort);
 }
