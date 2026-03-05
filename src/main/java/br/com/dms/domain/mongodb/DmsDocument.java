@@ -36,6 +36,8 @@ public class DmsDocument {
 
     private Map<String, Object> metadata;
 
+    private java.util.List<Double> contentEmbedding;
+
     public DmsDocument() {
     }
 
@@ -121,6 +123,14 @@ public class DmsDocument {
         this.metadata = metadata;
     }
 
+    public java.util.List<Double> getContentEmbedding() {
+        return contentEmbedding;
+    }
+
+    public void setContentEmbedding(java.util.List<Double> contentEmbedding) {
+        this.contentEmbedding = contentEmbedding;
+    }
+
     public static DmsDocument.Builder of() {
         return new DmsDocument.Builder();
     }
@@ -175,6 +185,11 @@ public class DmsDocument {
 
         public Builder metadata(Map<String, Object> metadata) {
             dmsDocument.setMetadata(metadata);
+            return this;
+        }
+
+        public Builder contentEmbedding(java.util.List<Double> contentEmbedding) {
+            dmsDocument.setContentEmbedding(contentEmbedding);
             return this;
         }
 

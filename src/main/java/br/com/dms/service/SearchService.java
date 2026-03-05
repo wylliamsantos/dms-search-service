@@ -53,6 +53,7 @@ public class SearchService {
     private final TenantContextService tenantContextService;
     private final AuditEventPublisher auditEventPublisher;
     private final AuditActorResolver auditActorResolver;
+    private final SemanticSearchRanker semanticSearchRanker;
 
     public SearchService(Environment environment,
                          DocumentCategoryRepository documentCategoryRepository,
@@ -60,7 +61,8 @@ public class SearchService {
                          DmsDocumentVersionRepository dmsDocumentVersionRepository,
                          TenantContextService tenantContextService,
                          AuditEventPublisher auditEventPublisher,
-                         AuditActorResolver auditActorResolver) {
+                         AuditActorResolver auditActorResolver,
+                         SemanticSearchRanker semanticSearchRanker) {
         this.environment = environment;
         this.documentCategoryRepository = documentCategoryRepository;
         this.dmsDocumentRepository = dmsDocumentRepository;
@@ -68,6 +70,7 @@ public class SearchService {
         this.tenantContextService = tenantContextService;
         this.auditEventPublisher = auditEventPublisher;
         this.auditActorResolver = auditActorResolver;
+        this.semanticSearchRanker = semanticSearchRanker;
     }
 
     public ResponseEntity<Page<EntryPagination>> searchByBusinessKey(String transactionId,
@@ -111,6 +114,7 @@ public class SearchService {
             .toList();
 
         String normalizedTextQuery = textQuery.toLowerCase(Locale.ROOT);
+        documents = semanticSearchRanker.rerank(documents, normalizedTextQuery);
 
         List<EntryPagination> allEntries = new ArrayList<>();
         VersionType requestedVersionType = Optional.ofNullable(request.getVersionType()).orElse(VersionType.MAJOR);
